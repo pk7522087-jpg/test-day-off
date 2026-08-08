@@ -1,0 +1,1578 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>503｜請假通知系統</title>
+  <style>
+    /* ==========================================
+       視覺風格：森林童話 × 木質 × 溫暖手繪 × 日系可愛
+       ========================================== */
+    :root {
+      --bg-paper: #fcf8f2;
+      --card-bg: #ffffff;
+      --card-wood: #f4ece1;
+      --primary-forest: #4a6b53;
+      --primary-forest-hover: #3b5742;
+      --accent-warm: #d97736;
+      --accent-danger: #c85a54;
+      --text-main: #4a3e3d;
+      --text-muted: #7d7069;
+      --border-color: #e2d7c7;
+      --radius-lg: 16px;
+      --radius-md: 10px;
+      --font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", "PingFang TC", "Noto Sans TC", sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: var(--font-family);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-paper);
+      color: var(--text-main);
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+      line-height: 1.5;
+    }
+
+    .app-container {
+      width: 100%;
+      max-width: 430px; /* 手機最佳化 */
+      background-color: var(--bg-paper);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      box-shadow: 0 0 20px rgba(0,0,0,0.05);
+    }
+
+    /* 頁首 */
+    .header {
+      background: linear-gradient(135deg, #4a6b53 0%, #3d5844 100%);
+      color: #fff;
+      padding: 16px 20px;
+      text-align: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .header h1 {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+    .header .subtitle {
+      font-size: 0.8rem;
+      opacity: 0.9;
+      margin-top: 2px;
+    }
+
+    /* 進度條 */
+    .progress-bar-container {
+      background-color: var(--card-wood);
+      padding: 10px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid var(--border-color);
+    }
+    .step-text {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--primary-forest);
+    }
+    .dots {
+      display: flex;
+      gap: 6px;
+    }
+    .dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: #d1c4b4;
+      transition: all 0.3s;
+    }
+    .dot.active {
+      background-color: var(--primary-forest);
+      width: 18px;
+      border-radius: 4px;
+    }
+
+    /* 內容區塊 */
+    .content {
+      padding: 20px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .step-panel {
+      display: none;
+      flex-direction: column;
+      gap: 16px;
+      animation: fadeIn 0.3s ease-in-out;
+    }
+    .step-panel.active {
+      display: flex;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* 卡片設計 */
+    .card {
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.02);
+    }
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: bold;
+      color: var(--primary-forest);
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* 表單元件 */
+    .form-group {
+      margin-bottom: 14px;
+    }
+    .form-group:last-child {
+      margin-bottom: 0;
+    }
+    label {
+      display: block;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: var(--text-main);
+    }
+    .required-star {
+      color: var(--accent-danger);
+      margin-left: 2px;
+    }
+    input[type="text"], input[type="date"], select, textarea {
+      width: 100%;
+      height: 48px;
+      padding: 0 12px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background-color: #fff;
+      font-size: 1rem;
+      color: var(--text-main);
+      outline: none;
+      transition: border-color 0.2s;
+    }
+    textarea {
+      height: 80px;
+      padding: 10px 12px;
+      resize: vertical;
+    }
+    input:focus, select:focus, textarea:focus {
+      border-color: var(--primary-forest);
+    }
+    .input-readonly {
+      background-color: var(--card-wood);
+      color: var(--text-muted);
+      cursor: not-allowed;
+    }
+
+    /* 選擇按鈕群組 (單選/卡片式) */
+    .option-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .option-btn {
+      min-height: 52px;
+      padding: 10px;
+      border: 1.5px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background-color: #fff;
+      color: var(--text-main);
+      font-size: 0.95rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .option-btn.selected {
+      background-color: #eaf2eb;
+      border-color: var(--primary-forest);
+      color: var(--primary-forest);
+      font-weight: bold;
+    }
+
+    /* 複選標籤格律 */
+    .checkbox-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+    }
+    .checkbox-btn {
+      min-height: 44px;
+      padding: 8px 10px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      background-color: #fff;
+      font-size: 0.9rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .checkbox-btn.selected {
+      background-color: #f3f8f4;
+      border-color: var(--primary-forest);
+      color: var(--primary-forest);
+      font-weight: bold;
+    }
+
+    /* 提醒與警示框 */
+    .alert-box {
+      border-radius: var(--radius-md);
+      padding: 12px;
+      font-size: 0.85rem;
+      line-height: 1.4;
+      margin-top: 8px;
+    }
+    .alert-info { background-color: #f0f7f2; border: 1px solid #c8e0ce; color: #2d5036; }
+    .alert-warning { background-color: #fff8eb; border: 1px solid #ffe0b2; color: #8a5300; }
+    .alert-danger { background-color: #fdf2f2; border: 1px solid #f8cecc; color: #9c27b0; }
+
+    /* 錯誤訊息提示 */
+    .error-msg {
+      color: var(--accent-danger);
+      font-size: 0.8rem;
+      margin-top: 4px;
+      display: none;
+    }
+    .has-error .error-msg { display: block; }
+    .has-error input, .has-error select { border-color: var(--accent-danger); }
+
+    /* 導航按鈕區 */
+    .nav-buttons {
+      display: flex;
+      gap: 12px;
+      margin-top: auto;
+      padding-top: 20px;
+    }
+    .btn {
+      flex: 1;
+      height: 48px;
+      border: none;
+      border-radius: var(--radius-md);
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: background-color 0.2s, opacity 0.2s;
+    }
+    .btn-primary { background-color: var(--primary-forest); color: #fff; }
+    .btn-primary:active { background-color: var(--primary-forest-hover); }
+    .btn-secondary { background-color: var(--card-wood); color: var(--text-main); border: 1px solid var(--border-color); }
+    .btn-success { background-color: #3b82f6; color: #fff; text-decoration: none; }
+
+    /* 摘要欄位列表 */
+    .summary-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px dashed var(--border-color);
+      font-size: 0.9rem;
+    }
+    .summary-item:last-child { border-bottom: none; }
+    .summary-label { color: var(--text-muted); }
+    .summary-val { font-weight: 600; text-align: right; max-width: 60%; }
+
+    /* 老師端專屬樣式 */
+    .admin-card {
+      background-color: #fff;
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 12px;
+      border-left: 5px solid var(--primary-forest);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.04);
+    }
+    .admin-card.type-sick { border-left-color: var(--accent-warm); }
+    .admin-card.type-contagious { border-left-color: var(--accent-danger); }
+    .status-badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-size: 0.75rem;
+      font-weight: bold;
+    }
+    .status-pending { background-color: #ffe0b2; color: #e65100; }
+    .status-viewed { background-color: #e1f5fe; color: #0288d1; }
+    .status-done { background-color: #e8f5e9; color: #2e7d32; }
+    .status-contact { background-color: #fbe9e7; color: #c62828; }
+
+    /* Modal 快取恢復 */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    .modal-box {
+      background: #fff;
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+<div class="app-container">
+  <!-- 頂部頁首 -->
+  <header class="header">
+    <h1 id="app-title">503｜請假通知</h1>
+    <div class="subtitle" id="app-subtitle">家長請假快速通報</div>
+  </header>
+
+  <!-- 家長端步驟指示 -->
+  <div class="progress-bar-container" id="progress-container">
+    <span class="step-text" id="step-text-display">Step 1 / 6</span>
+    <div class="dots" id="dots-container">
+      <div class="dot active"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+      <div class="dot"></div>
+    </div>
+  </div>
+
+  <!-- 主要內容視窗 -->
+  <main class="content">
+
+    <!-- ================= Step 1: 歡迎頁 ================= -->
+    <div class="step-panel active" id="step-1">
+      <div class="card" style="text-align: center; padding: 24px 16px;">
+        <div style="font-size: 3rem; margin-bottom: 12px;">🌿</div>
+        <h2 style="color: var(--primary-forest); margin-bottom: 10px; font-size: 1.3rem;">📋 503 請假通知</h2>
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 16px; text-align: left; line-height: 1.6;">
+          親愛的家長您好，若孩子預計請假，請依照步驟填寫，讓老師能即時掌握孩子的出缺席狀況。
+        </p>
+        <div class="alert-box alert-warning" style="text-align: left; margin-bottom: 12px;">
+          ⚠️ 本系統為家長與導師間的請假通知，正式請假仍須依學校規定完成請假單。
+        </div>
+        <div style="font-size: 0.85rem; color: var(--text-muted); margin-top: 8px;">
+          請由家長或監護人辦理請假手續。
+        </div>
+      </div>
+      <div class="nav-buttons">
+        <button class="btn btn-primary" onclick="goToStep(2)">開始填寫 ➔</button>
+      </div>
+    </div>
+
+    <!-- ================= Step 2: 學生與請假日期 ================= -->
+    <div class="step-panel" id="step-2">
+      <div class="card">
+        <div class="card-title">🏫 學生基本資料</div>
+        <div class="form-group" id="group-studentName">
+          <label>學生姓名 <span class="required-star">*</span></label>
+          <input type="text" id="studentName" placeholder="請輸入學生姓名" oninput="saveDraft()">
+          <div class="error-msg">請填寫學生姓名</div>
+        </div>
+        <div class="form-group">
+          <label>班級</label>
+          <input type="text" value="503" class="input-readonly" readonly>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">📅 請假日期與天數</div>
+        <div class="form-group" id="group-startDate">
+          <label>請假開始日 <span class="required-star">*</span></label>
+          <input type="date" id="startDate" onchange="calculateSchoolDays(); saveDraft();">
+          <div class="error-msg">請選擇開始日期</div>
+        </div>
+        <div class="form-group" id="group-endDate">
+          <label>請假結束日 <span class="required-star">*</span></label>
+          <input type="date" id="endDate" onchange="calculateSchoolDays(); saveDraft();">
+          <div class="error-msg">請選擇結束日期</div>
+        </div>
+
+        <div id="days-summary" style="display: none; margin-top: 10px;">
+          <div class="alert-box alert-info" style="font-weight: bold; font-size: 0.95rem;">
+            📅 本次請假：<span id="calculated-days">0</span> 個上課日
+          </div>
+          <div id="days-notice" class="alert-box" style="margin-top: 8px;"></div>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="goToStep(1)">上一步</button>
+        <button class="btn btn-primary" onclick="validateAndGo(2, 3)">下一步 ➔</button>
+      </div>
+    </div>
+
+    <!-- ================= Step 3: 選擇假別 ================= -->
+    <div class="step-panel" id="step-3">
+      <div class="card">
+        <div class="card-title">📋 請選擇假別 <span class="required-star">*</span></div>
+        <div class="option-grid" id="leave-type-options">
+          <div class="option-btn" onclick="selectLeaveType('事假')">📝 事假</div>
+          <div class="option-btn" onclick="selectLeaveType('病假')">🤒 病假</div>
+          <div class="option-btn" onclick="selectLeaveType('生理假')">🌸 生理假</div>
+          <div class="option-btn" onclick="selectLeaveType('喪假')">🕊️ 喪假</div>
+        </div>
+        <div class="error-msg" id="err-leaveType" style="margin-top: 8px; text-align: center;">請選擇一個假別</div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="goToStep(2)">上一步</button>
+        <button class="btn btn-primary" onclick="validateAndGo(3, 4)">下一步 ➔</button>
+      </div>
+    </div>
+
+    <!-- ================= Step 4: 條件式填寫 (病假專屬 / 生理假提醒) ================= -->
+    <div class="step-panel" id="step-4">
+      <!-- 非病假時之簡單呈現 -->
+      <div id="panel-non-sick" class="card" style="display: none;">
+        <div class="card-title" id="non-sick-title">請假類別確認</div>
+        <p style="color: var(--text-muted); font-size: 0.9rem;" id="non-sick-desc"></p>
+      </div>
+
+      <!-- 病假選擇選單 -->
+      <div id="panel-sick-main" style="display: none; flex-direction: column; gap: 16px;">
+        <div class="card">
+          <div class="card-title">🤒 病假狀況調查</div>
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 12px;">
+            請選擇孩子目前的情況。此系統不進行醫療診斷，僅協助老師蒐集必要資訊。
+          </p>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <div class="option-btn" id="btn-sick-general" onclick="selectSickCategory('一般')">
+              🟢 一般疾病／尚未確診
+            </div>
+            <div class="option-btn" id="btn-sick-contagious" onclick="selectSickCategory('傳染病')">
+              🚨 疑似或確診下列傳染疾病
+            </div>
+          </div>
+          <div class="error-msg" id="err-sickCategory" style="margin-top: 8px; text-align: center;">請選擇病假狀況</div>
+        </div>
+
+        <!-- 一般疾病／傳染病症狀複選 -->
+        <div id="panel-symptoms" class="card" style="display: none;">
+          <div class="card-title">🩺 目前主要症狀（可複選） <span class="required-star">*</span></div>
+          <div class="checkbox-grid" id="symptoms-grid"></div>
+          
+          <div id="other-symptom-box" class="form-group" style="display: none; margin-top: 12px;">
+            <label>請輸入其他症狀：</label>
+            <input type="text" id="otherSymptoms" placeholder="請註明症狀" oninput="saveDraft()">
+          </div>
+          <div class="error-msg" id="err-symptoms">請至少選擇一項症狀</div>
+
+          <div id="general-sick-notices" style="display: none; margin-top: 12px;">
+            <div class="alert-box alert-info">📌 若後續經醫師診斷為傳染疾病，請再通知導師。</div>
+            <div class="alert-box alert-warning">⚠️ 發燒期間請勿到校；退燒24小時以上且症狀改善，再復課。</div>
+          </div>
+        </div>
+
+        <!-- 傳染疾病專屬選擇與細節 -->
+        <div id="panel-contagious-details" style="display: none; flex-direction: column; gap: 16px;">
+          <div class="card">
+            <div class="card-title">🚨 選擇傳染疾病項目 <span class="required-star">*</span></div>
+            <select id="contagiousDisease" onchange="onContagiousSelect(); saveDraft();">
+              <option value="">-- 請選擇疾病 --</option>
+              <option value="流行性感冒（流感）">1. 流行性感冒（流感）</option>
+              <option value="腸病毒">2. 腸病毒</option>
+              <option value="水痘">3. 水痘</option>
+              <option value="登革熱">4. 登革熱</option>
+              <option value="傳染性結膜炎（紅眼症）">5. 傳染性結膜炎（紅眼症）</option>
+              <option value="肺結核">6. 肺結核</option>
+              <option value="腮腺炎">7. 腮腺炎</option>
+              <option value="病毒性腸胃炎">8. 病毒性腸胃炎</option>
+              <option value="新冠肺炎（COVID-19）">9. 新冠肺炎（COVID-19）</option>
+            </select>
+            <div class="error-msg" id="err-contagiousDisease">請選擇傳染疾病項目</div>
+
+            <!-- 自主健康管理提醒 -->
+            <div id="disease-notice-box" class="alert-box alert-danger" style="display: none; margin-top: 12px;"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-title">📝 疾病詳細調查</div>
+            <div class="form-group">
+              <label>目前診斷狀況 <span class="required-star">*</span></label>
+              <div class="option-grid">
+                <div class="option-btn" id="diag-done" onclick="selectDiagnosis('醫師已診斷')">醫師已診斷</div>
+                <div class="option-btn" id="diag-suspect" onclick="selectDiagnosis('目前疑似，尚未確診')">目前疑似，尚未確診</div>
+              </div>
+              <div class="error-msg" id="err-diagnosisStatus">請選擇診斷狀況</div>
+            </div>
+
+            <div class="form-group">
+              <label>發病日期</label>
+              <input type="date" id="onsetDate" onchange="saveDraft()">
+            </div>
+            <div class="form-group">
+              <label>就診日期</label>
+              <input type="date" id="visitDate" onchange="saveDraft()">
+            </div>
+            <div class="form-group">
+              <label>就診醫院／診所</label>
+              <input type="text" id="hospital" placeholder="例如：鳳山婦幼醫院" oninput="saveDraft()">
+            </div>
+            <div class="form-group">
+              <label>是否住院</label>
+              <div class="option-grid">
+                <div class="option-btn" id="hosp-no" onclick="selectHospitalized('否')">否</div>
+                <div class="option-btn" id="hosp-yes" onclick="selectHospitalized('是')">是</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>最後入校日</label>
+              <input type="date" id="lastSchoolDate" onchange="saveDraft()">
+            </div>
+          </div>
+
+          <!-- 流感專屬 -->
+          <div class="card" id="panel-flu-questions" style="display: none;">
+            <div class="card-title">流感專屬問題</div>
+            <div class="form-group">
+              <label>是否有做流感快篩？</label>
+              <div class="option-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="option-btn" id="flu-test-p" onclick="selectFluTest('陽性')">陽性</div>
+                <div class="option-btn" id="flu-test-n" onclick="selectFluTest('陰性')">陰性</div>
+                <div class="option-btn" id="flu-test-u" onclick="selectFluTest('未篩')">未篩</div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>是否使用抗流感病毒藥物？</label>
+              <div class="option-grid">
+                <div class="option-btn" id="flu-med-y" onclick="selectFluMed('有')">有</div>
+                <div class="option-btn" id="flu-med-n" onclick="selectFluMed('沒有')">沒有</div>
+              </div>
+            </div>
+            <div id="flu-med-details" style="display: none;">
+              <div class="form-group">
+                <label>藥物名稱</label>
+                <input type="text" id="antiviralDrugName" placeholder="例如：克流感、速剋流、瑞貝塔" oninput="saveDraft()">
+              </div>
+              <div class="form-group">
+                <label>抗流感病毒藥物是否為自費？</label>
+                <div class="option-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                  <div class="option-btn" id="flu-pay-y" onclick="selectFluPay('是')">是</div>
+                  <div class="option-btn" id="flu-pay-n" onclick="selectFluPay('否')">否</div>
+                  <div class="option-btn" id="flu-pay-u" onclick="selectFluPay('不清楚')">不清楚</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- COVID-19 專屬 -->
+          <div class="card" id="panel-covid-questions" style="display: none;">
+            <div class="card-title">COVID-19 專屬問題</div>
+            <div class="form-group">
+              <label>是否有做 COVID-19 快篩？</label>
+              <div class="option-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="option-btn" id="covid-p" onclick="selectCovidTest('陽性')">陽性</div>
+                <div class="option-btn" id="covid-n" onclick="selectCovidTest('陰性')">陰性</div>
+                <div class="option-btn" id="covid-u" onclick="selectCovidTest('未篩')">未篩</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 同住家人 -->
+          <div class="card">
+            <div class="card-title">👨‍👩‍👧‍👦 同住家人狀況</div>
+            <div class="form-group">
+              <label>同住家人是否有相同症狀？</label>
+              <div class="option-grid" style="grid-template-columns: 1fr 1fr 1fr;">
+                <div class="option-btn" id="house-n" onclick="selectHousehold('沒有')">沒有</div>
+                <div class="option-btn" id="house-y" onclick="selectHousehold('有')">有</div>
+                <div class="option-btn" id="house-u" onclick="selectHousehold('不確定')">不確定</div>
+              </div>
+            </div>
+            <div id="household-details-box" style="display: none;">
+              <div class="form-group">
+                <label>稱謂／診斷症狀／日期</label>
+                <input type="text" id="householdDetails" placeholder="例：媽媽，發燒咳嗽，8/7發病" oninput="saveDraft()">
+              </div>
+            </div>
+          </div>
+
+          <!-- 同校兄弟姊妹 -->
+          <div class="card">
+            <div class="card-title">🏫 同校兄弟姊妹狀況</div>
+            <div class="form-group">
+              <label>是否有同校兄弟姊妹出現相同疾病？</label>
+              <div class="option-grid">
+                <div class="option-btn" id="sib-n" onclick="selectSibling('沒有')">沒有</div>
+                <div class="option-btn" id="sib-y" onclick="selectSibling('有')">有</div>
+              </div>
+            </div>
+            <div id="sibling-details-box" style="display: none;">
+              <div class="form-group">
+                <label>班級與姓名</label>
+                <input type="text" id="siblingDetails" placeholder="例：302班 王大明" oninput="saveDraft()">
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="goToStep(3)">上一步</button>
+        <button class="btn btn-primary" onclick="validateAndGo(4, 5)">下一步 ➔</button>
+      </div>
+    </div>
+
+    <!-- ================= Step 5: 作業與線上上課 ================= -->
+    <div class="step-panel" id="step-5">
+      <div class="card">
+        <div class="card-title">📚 今日作業</div>
+        <div class="form-group">
+          <label>是否需要老師將今日作業放置於大門警衛室？ <span class="required-star">*</span></label>
+          <div class="option-grid">
+            <div class="option-btn" id="hw-yes" onclick="selectHomework('需要')">需要</div>
+            <div class="option-btn" id="hw-no" onclick="selectHomework('不需要')">不需要</div>
+          </div>
+          <div class="error-msg" id="err-homework">請選擇是否需要作業</div>
+        </div>
+        <div id="hw-notice" class="alert-box alert-info" style="display: none; margin-top: 8px;">
+          📚 已登記領取今日作業。<br>請於 16:00 下班前至學校大門警衛室領取。
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">💻 線上上課</div>
+        <div class="form-group">
+          <label>是否需要線上上課？ <span class="required-star">*</span></label>
+          <div class="option-grid">
+            <div class="option-btn" id="online-yes" onclick="selectOnlineClass('需要')">需要</div>
+            <div class="option-btn" id="online-no" onclick="selectOnlineClass('不需要')">不需要</div>
+          </div>
+          <div class="error-msg" id="err-onlineClass">請選擇是否需要線上上課</div>
+        </div>
+        <div id="online-notice" class="alert-box alert-info" style="display: none; margin-top: 8px;">
+          💻 已登記線上上課。<br>上課連結如下：
+          <div style="margin-top: 8px;">
+            <a href="https://meet.google.com/hnm-mtmd-ehw" target="_blank" class="btn btn-success" style="height: 40px; font-size: 0.9rem;">
+              🟢 進入 Google Meet
+            </a>
+          </div>
+        </div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="goToStep(4)">上一步</button>
+        <button class="btn btn-primary" onclick="validateAndGo(5, 6)">預覽與確認 ➔</button>
+      </div>
+    </div>
+
+    <!-- ================= Step 6: 確認資料 ================= -->
+    <div class="step-panel" id="step-6">
+      <div class="card">
+        <div class="card-title">📋 請確認您的填報內容</div>
+        <div id="confirmation-summary"></div>
+      </div>
+
+      <div class="nav-buttons">
+        <button class="btn btn-secondary" onclick="goToStep(5)">↩️ 返回修改</button>
+        <button class="btn btn-primary" onclick="submitForm()">✅ 確認送出</button>
+      </div>
+    </div>
+
+    <!-- ================= Step 7: 送出完成頁面 ================= -->
+    <div class="step-panel" id="step-7">
+      <div class="card" style="text-align: center;">
+        <div style="font-size: 2.5rem; color: #4caf50; margin-bottom: 8px;">✅</div>
+        <h2 style="color: var(--primary-forest); font-size: 1.2rem;">請假通知已送出</h2>
+        <p style="font-size: 0.85rem; color: var(--text-muted); margin-top: 4px;">以下為本次填報內容</p>
+        
+        <div id="test-mode-badge" class="alert-box alert-warning" style="display:none; margin-top: 10px; font-weight: bold;">
+          🧪 目前為測試模式（未設定真正的資料庫）
+        </div>
+
+        <div style="background: #f8f6f0; border-radius: var(--radius-md); padding: 8px; margin: 12px 0; font-size: 0.85rem; font-weight: bold; color: var(--text-muted);">
+          填報編號：<span id="out-submissionId"></span>
+        </div>
+
+        <div id="final-summary" style="text-align: left; margin-top: 10px;"></div>
+
+        <div class="alert-box alert-warning" style="text-align: left; margin-top: 14px;">
+          ⚠️ 本通知為家長與導師間的請假通報，不等同於正式請假核准；正式請假仍須依學校規定完成請假單。
+        </div>
+      </div>
+
+      <div class="nav-buttons" style="flex-direction: column;">
+        <button id="btn-copy-data" class="btn btn-secondary" onclick="copyResultData()" style="display: none;">📋 複製填報 JSON 資料</button>
+        <button class="btn btn-primary" onclick="resetForm()">返回 503 班級首頁</button>
+      </div>
+    </div>
+
+    <!-- ================= 老師管理端 (Admin Dashboard) ================= -->
+    <div class="step-panel" id="panel-admin" style="display: none;">
+      <div class="card" style="background-color: var(--card-wood);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+          <div style="font-weight: bold; color: var(--primary-forest); font-size: 1.1rem;">📊 今日概況</div>
+          <div id="admin-today-date" style="font-size: 0.8rem; color: var(--text-muted);"></div>
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center;">
+          <div style="background: #fff; padding: 8px; border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">總請假</div>
+            <div id="stat-total" style="font-size: 1.2rem; font-weight: bold;">0</div>
+          </div>
+          <div style="background: #fff; padding: 8px; border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">病假</div>
+            <div id="stat-sick" style="font-size: 1.2rem; font-weight: bold; color: var(--accent-warm);">0</div>
+          </div>
+          <div style="background: #fff; padding: 8px; border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">傳染病</div>
+            <div id="stat-contagious" style="font-size: 1.2rem; font-weight: bold; color: var(--accent-danger);">0</div>
+          </div>
+          <div style="background: #fff; padding: 8px; border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">需作業</div>
+            <div id="stat-hw" style="font-size: 1.2rem; font-weight: bold;">0</div>
+          </div>
+          <div style="background: #fff; padding: 8px; border-radius: 8px;">
+            <div style="font-size: 0.75rem; color: var(--text-muted);">需線上</div>
+            <div id="stat-online" style="font-size: 1.2rem; font-weight: bold;">0</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 頁籤分頁 -->
+      <div style="display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px;">
+        <button class="btn btn-secondary" style="height: 36px; font-size: 0.8rem; flex: none;" onclick="renderAdminList('all')">全部清單</button>
+        <button class="btn btn-secondary" style="height: 36px; font-size: 0.8rem; flex: none;" onclick="renderAdminList('contagious')">🚨 傳染病</button>
+        <button class="btn btn-secondary" style="height: 36px; font-size: 0.8rem; flex: none;" onclick="renderAdminList('hw')">📚 作業需求</button>
+        <button class="btn btn-secondary" style="height: 36px; font-size: 0.8rem; flex: none;" onclick="renderAdminList('online')">💻 線上課程</button>
+      </div>
+
+      <div id="admin-records-list"></div>
+
+      <div style="margin-top: 10px; font-size: 0.75rem; color: var(--text-muted); text-align: center;">
+        目前為前端展示版，正式使用時必須由 Google Apps Script／Firebase 等後端進行驗證。
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- 草稿恢復彈視窗 -->
+<div class="modal-overlay" id="draft-modal" style="display: none;">
+  <div class="modal-box">
+    <div style="font-size: 2rem; margin-bottom: 8px;">📋</div>
+    <div style="font-weight: bold; margin-bottom: 6px;">發現上次未完成的請假資料</div>
+    <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">請問是否要繼續填寫？</p>
+    <div style="display: flex; gap: 10px;">
+      <button class="btn btn-secondary" onclick="clearDraftAndStartNew()" style="font-size: 0.85rem;">重新開始</button>
+      <button class="btn btn-primary" onclick="restoreDraftData()" style="font-size: 0.85rem;">繼續填寫</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   1. CONFIG & 全局變數
+   ========================================================================== */
+// ===== Google Apps Script 設定 =====
+const CONFIG = {
+    SUBMIT_URL: "", // 未來放置 Google Apps Script Web App URL
+    TEACHER_DASHBOARD_URL: "",
+    CLASS_NAME: "503",
+    TEACHER_NAME: "洪老師"
+};
+
+// 國定假日清單 (YYYY-MM-DD 格式，不計算為上課日)
+const HOLIDAYS = [
+    "2026-01-01",
+    "2026-02-16", "2026-02-17", "2026-02-18", "2026-02-19", "2026-02-20", // 農曆春節假
+    "2026-02-28",
+    "2026-04-04", "2026-04-05",
+    "2026-06-19",
+    "2026-09-25",
+    "2026-10-10"
+];
+
+// 標準症狀選單
+const SYMPTOM_OPTIONS = [
+    "發燒", "咳嗽", "喉嚨痛", "流鼻水", "鼻塞", "頭痛",
+    "肌肉痠痛", "噁心", "嘔吐", "腹瀉", "腹痛", "眼睛紅／分泌物",
+    "口腔潰瘍", "出疹／紅疹", "耳朵不適", "食慾不振", "精神不佳", "其他"
+];
+
+// 全局表單狀態 State
+let formData = {
+    submissionId: "",
+    submittedAt: "",
+    studentName: "",
+    className: "503",
+    leaveType: "",
+    startDate: "",
+    endDate: "",
+    schoolDays: 0,
+
+    sickCategory: "", // 一般 / 傳染病
+    diseaseType: "",  // 一般病假 / 傳染病名稱
+    disease: "",
+    diagnosisStatus: "",
+
+    symptoms: [],
+    otherSymptoms: "",
+
+    onsetDate: "",
+    visitDate: "",
+    hospital: "",
+    hospitalized: "",
+    lastSchoolDate: "",
+
+    householdSymptoms: "",
+    householdDetails: "",
+
+    influenzaTest: "",
+    antiviralMedication: "",
+    antiviralDrugName: "",
+    antiviralSelfPay: "",
+
+    covidTest: "",
+
+    siblingSameDisease: "",
+    siblingDetails: "",
+
+    homeworkRequired: "",
+    onlineClassRequired: "",
+
+    status: "待處理",
+    teacherNote: "",
+    teacherChecklist: {}
+};
+
+let currentStep = 1;
+
+/* ==========================================================================
+   2. 初始化 (Initialization)
+   ========================================================================== */
+window.addEventListener("DOMContentLoaded", () => {
+    // 檢查網址是否有 admin 參數 (例如 ?admin=true)
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('admin') === 'true') {
+        initAdminView();
+        return;
+    }
+
+    initSymptomGrid();
+
+    // 檢查 LocalStorage 是否有暫存草稿
+    const savedDraft = localStorage.getItem("503_leave_draft");
+    if (savedDraft) {
+        document.getElementById("draft-modal").style.display = "flex";
+    }
+});
+
+/* ==========================================================================
+   3. 步驟導覽 (Step Navigation & UI Utilities)
+   ========================================================================== */
+function updateStepProgress(step) {
+    currentStep = step;
+    const progressContainer = document.getElementById("progress-container");
+    const stepTextDisplay = document.getElementById("step-text-display");
+    const dots = document.querySelectorAll("#dots-container .dot");
+
+    if (step >= 7) {
+        progressContainer.style.display = "none";
+        return;
+    }
+
+    progressContainer.style.display = "flex";
+    stepTextDisplay.innerText = `Step ${step} / 6`;
+
+    dots.forEach((dot, idx) => {
+        if (idx < step) {
+            dot.classList.add("active");
+        } else {
+            dot.classList.remove("active");
+        }
+    });
+}
+
+function goToStep(step) {
+    document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+    const target = document.getElementById(`step-${step}`);
+    if (target) {
+        target.classList.add("active");
+        updateStepProgress(step);
+        window.scrollTo(0, 0);
+    }
+}
+
+/* ==========================================================================
+   4. 日期與上課日數計算 (Holiday & Date Math)
+   ========================================================================== */
+function calculateSchoolDays() {
+    const startStr = document.getElementById("startDate").value;
+    const endStr = document.getElementById("endDate").value;
+    const summaryBox = document.getElementById("days-summary");
+    const daysDisplay = document.getElementById("calculated-days");
+    const noticeDisplay = document.getElementById("days-notice");
+
+    if (!startStr || !endStr) {
+        summaryBox.style.display = "none";
+        formData.schoolDays = 0;
+        return 0;
+    }
+
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+
+    if (end < start) {
+        summaryBox.style.display = "none";
+        formData.schoolDays = 0;
+        return 0;
+    }
+
+    let count = 0;
+    let cur = new Date(start);
+
+    while (cur <= end) {
+        const dayOfWeek = cur.getDay(); // 0: 日, 6: 六
+        const dateFormatted = cur.toISOString().split('T')[0];
+
+        // 排除週六(6)、週日(0)與 HOLIDAYS 國定假日
+        if (dayOfWeek !== 0 && dayOfWeek !== 6 && !HOLIDAYS.includes(dateFormatted)) {
+            count++;
+        }
+        cur.setDate(cur.getDate() + 1);
+    }
+
+    formData.startDate = startStr;
+    formData.endDate = endStr;
+    formData.schoolDays = count;
+
+    daysDisplay.innerText = count;
+    summaryBox.style.display = "block";
+
+    // 依天數提醒顯示
+    noticeDisplay.className = "alert-box";
+    if (count <= 2) {
+        noticeDisplay.classList.add("alert-info");
+        noticeDisplay.innerText = "📌 本次請假為 2 個上課日以內，請依學校規定向導師辦理。";
+    } else if (count >= 3 && count <= 4) {
+        noticeDisplay.classList.add("alert-warning");
+        noticeDisplay.innerText = "⚠️ 本次請假達 3 個上課日以上，請依學校規定由導師核轉學務處生教組辦理後續流程。";
+    } else {
+        noticeDisplay.classList.add("alert-danger");
+        noticeDisplay.innerText = "🚨 本次請假達 5 個上課日以上，請依學校規定辦理後續核准流程。";
+    }
+
+    return count;
+}
+
+/* ==========================================================================
+   5. 假別與條件流程 (Leave Type & Conditional Fields)
+   ========================================================================== */
+function selectLeaveType(type) {
+    formData.leaveType = type;
+    document.querySelectorAll("#leave-type-options .option-btn").forEach(btn => {
+        if (btn.innerText.includes(type)) {
+            btn.classList.add("selected");
+        } else {
+            btn.classList.remove("selected");
+        }
+    });
+    document.getElementById("err-leaveType").style.display = "none";
+    saveDraft();
+}
+
+function prepareStep4() {
+    const nonSickPanel = document.getElementById("panel-non-sick");
+    const sickMainPanel = document.getElementById("panel-sick-main");
+
+    if (formData.leaveType !== "病假") {
+        nonSickPanel.style.display = "block";
+        sickMainPanel.style.display = "none";
+
+        const titleMap = {
+            "事假": "📝 事假填報確認",
+            "生理假": "🌸 生理假填報確認",
+            "喪假": "🕊️ 喪假填報確認"
+        };
+        const descMap = {
+            "事假": "您選擇了【事假】，點擊下一步繼續填寫作業與線上上課需求。",
+            "生理假": "女性學生因生理日致就學有困難者，每月得請生理假一日，依學校規定辦理。",
+            "喪假": "您選擇了【喪假】，點擊下一步繼續填寫作業與線上上課需求。"
+        };
+
+        document.getElementById("non-sick-title").innerText = titleMap[formData.leaveType] || "假別確認";
+        document.getElementById("non-sick-desc").innerText = descMap[formData.leaveType] || "";
+    } else {
+        nonSickPanel.style.display = "none";
+        sickMainPanel.style.display = "flex";
+    }
+}
+
+function selectSickCategory(cat) {
+    formData.sickCategory = cat;
+    document.getElementById("btn-sick-general").classList.toggle("selected", cat === "一般");
+    document.getElementById("btn-sick-contagious").classList.toggle("selected", cat === "傳染病");
+    document.getElementById("err-sickCategory").style.display = "none";
+
+    const symptomsPanel = document.getElementById("panel-symptoms");
+    const contagiousPanel = document.getElementById("panel-contagious-details");
+    const generalNotices = document.getElementById("general-sick-notices");
+
+    symptomsPanel.style.display = "block";
+
+    if (cat === "一般") {
+        formData.diseaseType = "一般病假";
+        formData.disease = "一般疾病／尚未確診";
+        contagiousPanel.style.display = "none";
+        generalNotices.style.display = "block";
+    } else {
+        formData.diseaseType = "傳染病";
+        contagiousPanel.style.display = "flex";
+        generalNotices.style.display = "none";
+    }
+    saveDraft();
+}
+
+/* ==========================================================================
+   6. 症狀選擇 (Symptoms Grid)
+   ========================================================================== */
+function initSymptomGrid() {
+    const grid = document.getElementById("symptoms-grid");
+    grid.innerHTML = "";
+    SYMPTOM_OPTIONS.forEach(s => {
+        const btn = document.createElement("div");
+        btn.className = "checkbox-btn";
+        btn.innerHTML = `<span style="font-size:0.8rem;">⬜</span> <span>${s}</span>`;
+        btn.onclick = () => toggleSymptom(s, btn);
+        grid.appendChild(btn);
+    });
+}
+
+function toggleSymptom(symptom, element) {
+    const idx = formData.symptoms.indexOf(symptom);
+    if (idx > -1) {
+        formData.symptoms.splice(idx, 1);
+        element.classList.remove("selected");
+        element.querySelector("span").innerText = "⬜";
+    } else {
+        formData.symptoms.push(symptom);
+        element.classList.add("selected");
+        element.querySelector("span").innerText = "☑️";
+    }
+
+    if (symptom === "其他") {
+        const otherBox = document.getElementById("other-symptom-box");
+        otherBox.style.display = formData.symptoms.includes("其他") ? "block" : "none";
+    }
+
+    if (formData.symptoms.length > 0) {
+        document.getElementById("err-symptoms").style.display = "none";
+    }
+    saveDraft();
+}
+
+/* ==========================================================================
+   7. 傳染疾病選擇與邏輯 (Contagious Diseases)
+   ========================================================================== */
+function onContagiousSelect() {
+    const val = document.getElementById("contagiousDisease").value;
+    formData.disease = val;
+
+    const fluPanel = document.getElementById("panel-flu-questions");
+    const covidPanel = document.getElementById("panel-covid-questions");
+    const noticeBox = document.getElementById("disease-notice-box");
+
+    fluPanel.style.display = (val === "流行性感冒（流感）") ? "block" : "none";
+    covidPanel.style.display = (val === "新冠肺炎（COVID-19）") ? "block" : "none";
+
+    const noticeMap = {
+        "流行性感冒（流感）": "發燒期間請勿到校；未用退燒藥情況下，退燒至少24小時以上且症狀改善再復課。",
+        "腸病毒": "自主健康管理7天。",
+        "水痘": "自主健康管理直到水泡都乾燥結痂再恢復上學。",
+        "登革熱": "發病後在家至少自主健康管理5日。",
+        "傳染性結膜炎（紅眼症）": "自主健康管理3天。",
+        "肺結核": "住院隔離2週。",
+        "腮腺炎": "自主健康管理5天。",
+        "病毒性腸胃炎": "自主健康管理至症狀解除至少48小時後，再恢復上學。",
+        "新冠肺炎（COVID-19）": "發燒期間請勿到校；未用退燒藥情況下，退燒至少24小時以上且症狀改善再復課。"
+    };
+
+    if (noticeMap[val]) {
+        noticeBox.innerText = "🏫 學校提醒：" + noticeMap[val];
+        noticeBox.style.display = "block";
+    } else {
+        noticeBox.style.display = "none";
+    }
+    if (val) document.getElementById("err-contagiousDisease").style.display = "none";
+}
+
+function selectDiagnosis(status) {
+    formData.diagnosisStatus = status;
+    document.getElementById("diag-done").classList.toggle("selected", status === '醫師已診斷');
+    document.getElementById("diag-suspect").classList.toggle("selected", status === '目前疑似，尚未確診');
+    document.getElementById("err-diagnosisStatus").style.display = "none";
+    saveDraft();
+}
+
+function selectHospitalized(val) {
+    formData.hospitalized = val;
+    document.getElementById("hosp-no").classList.toggle("selected", val === '否');
+    document.getElementById("hosp-yes").classList.toggle("selected", val === '是');
+    saveDraft();
+}
+
+function selectFluTest(val) {
+    formData.influenzaTest = val;
+    document.getElementById("flu-test-p").classList.toggle("selected", val === '陽性');
+    document.getElementById("flu-test-n").classList.toggle("selected", val === '陰性');
+    document.getElementById("flu-test-u").classList.toggle("selected", val === '未篩');
+    saveDraft();
+}
+
+function selectFluMed(val) {
+    formData.antiviralMedication = val;
+    document.getElementById("flu-med-y").classList.toggle("selected", val === '有');
+    document.getElementById("flu-med-n").classList.toggle("selected", val === '沒有');
+    document.getElementById("flu-med-details").style.display = (val === '有') ? "block" : "none";
+    saveDraft();
+}
+
+function selectFluPay(val) {
+    formData.antiviralSelfPay = val;
+    document.getElementById("flu-pay-y").classList.toggle("selected", val === '是');
+    document.getElementById("flu-pay-n").classList.toggle("selected", val === '否');
+    document.getElementById("flu-pay-u").classList.toggle("selected", val === '不清楚');
+    saveDraft();
+}
+
+function selectCovidTest(val) {
+    formData.covidTest = val;
+    document.getElementById("covid-p").classList.toggle("selected", val === '陽性');
+    document.getElementById("covid-n").classList.toggle("selected", val === '陰性');
+    document.getElementById("covid-u").classList.toggle("selected", val === '未篩');
+    saveDraft();
+}
+
+function selectHousehold(val) {
+    formData.householdSymptoms = val;
+    document.getElementById("house-n").classList.toggle("selected", val === '沒有');
+    document.getElementById("house-y").classList.toggle("selected", val === '有');
+    document.getElementById("house-u").classList.toggle("selected", val === '不確定');
+    document.getElementById("household-details-box").style.display = (val === '有') ? "block" : "none";
+    saveDraft();
+}
+
+function selectSibling(val) {
+    formData.siblingSameDisease = val;
+    document.getElementById("sib-n").classList.toggle("selected", val === '沒有');
+    document.getElementById("sib-y").classList.toggle("selected", val === '有');
+    document.getElementById("sibling-details-box").style.display = (val === '有') ? "block" : "none";
+    saveDraft();
+}
+
+/* ==========================================================================
+   8. 作業與線上上課 (Homework & Online Class)
+   ========================================================================== */
+function selectHomework(val) {
+    formData.homeworkRequired = val;
+    document.getElementById("hw-yes").classList.toggle("selected", val === '需要');
+    document.getElementById("hw-no").classList.toggle("selected", val === '不需要');
+    document.getElementById("hw-notice").style.display = (val === '需要') ? "block" : "none";
+    document.getElementById("err-homework").style.display = "none";
+    saveDraft();
+}
+
+function selectOnlineClass(val) {
+    formData.onlineClassRequired = val;
+    document.getElementById("online-yes").classList.toggle("selected", val === '需要');
+    document.getElementById("online-no").classList.toggle("selected", val === '不需要');
+    document.getElementById("online-notice").style.display = (val === '需要') ? "block" : "none";
+    document.getElementById("err-onlineClass").style.display = "none";
+    saveDraft();
+}
+
+/* ==========================================================================
+   9. 欄位驗證 (Validation Logic)
+   ========================================================================== */
+function validateAndGo(fromStep, toStep) {
+    let isValid = true;
+
+    if (fromStep === 2) {
+        const nameVal = document.getElementById("studentName").value.trim();
+        const startVal = document.getElementById("startDate").value;
+        const endVal = document.getElementById("endDate").value;
+
+        if (!nameVal) {
+            document.getElementById("group-studentName").classList.add("has-error");
+            isValid = false;
+        } else {
+            document.getElementById("group-studentName").classList.remove("has-error");
+            formData.studentName = nameVal;
+        }
+
+        if (!startVal) {
+            document.getElementById("group-startDate").classList.add("has-error");
+            isValid = false;
+        } else {
+            document.getElementById("group-startDate").classList.remove("has-error");
+        }
+
+        if (!endVal) {
+            document.getElementById("group-endDate").classList.add("has-error");
+            isValid = false;
+        } else {
+            document.getElementById("group-endDate").classList.remove("has-error");
+        }
+
+        if (isValid && calculateSchoolDays() <= 0) {
+            alert("請假結束日不得大於開始日！");
+            isValid = false;
+        }
+    }
+
+    if (fromStep === 3) {
+        if (!formData.leaveType) {
+            document.getElementById("err-leaveType").style.display = "block";
+            isValid = false;
+        } else {
+            document.getElementById("err-leaveType").style.display = "none";
+            prepareStep4();
+        }
+    }
+
+    if (fromStep === 4 && formData.leaveType === "病假") {
+        if (!formData.sickCategory) {
+            document.getElementById("err-sickCategory").style.display = "block";
+            isValid = false;
+        }
+
+        if (formData.symptoms.length === 0) {
+            document.getElementById("err-symptoms").style.display = "block";
+            isValid = false;
+        }
+
+        if (formData.sickCategory === "傳染病") {
+            if (!formData.disease) {
+                document.getElementById("err-contagiousDisease").style.display = "block";
+                isValid = false;
+            }
+            if (!formData.diagnosisStatus) {
+                document.getElementById("err-diagnosisStatus").style.display = "block";
+                isValid = false;
+            }
+        }
+    }
+
+    if (fromStep === 5) {
+        if (!formData.homeworkRequired) {
+            document.getElementById("err-homework").style.display = "block";
+            isValid = false;
+        }
+        if (!formData.onlineClassRequired) {
+            document.getElementById("err-onlineClass").style.display = "block";
+            isValid = false;
+        }
+        if (isValid) renderConfirmationSummary();
+    }
+
+    if (isValid) {
+        goToStep(toStep);
+    }
+}
+
+/* ==========================================================================
+   10. 確認頁面與結果渲染 (Summary & Result Display)
+   ========================================================================== */
+function renderConfirmationSummary() {
+    const summaryBox = document.getElementById("confirmation-summary");
+    
+    // 獲取其他症狀輸入
+    if (formData.symptoms.includes("其他")) {
+        formData.otherSymptoms = document.getElementById("otherSymptoms").value.trim();
+    }
+
+    let html = `
+        <div class="summary-item"><span class="summary-label">學生姓名</span><span class="summary-val">${formData.studentName}</span></div>
+        <div class="summary-item"><span class="summary-label">班級</span><span class="summary-val">503</span></div>
+        <div class="summary-item"><span class="summary-label">假別</span><span class="summary-val">${formData.leaveType}</span></div>
+        <div class="summary-item"><span class="summary-label">請假日期</span><span class="summary-val">${formData.startDate} ～ ${formData.endDate}</span></div>
+        <div class="summary-item"><span class="summary-label">上課日數</span><span class="summary-val">${formData.schoolDays} 天</span></div>
+    `;
+
+    if (formData.leaveType === "病假") {
+        html += `<div class="summary-item"><span class="summary-label">病假類型</span><span class="summary-val">${formData.disease}</span></div>`;
+        let sympStr = formData.symptoms.join("、");
+        if (formData.otherSymptoms) sympStr += ` (${formData.otherSymptoms})`;
+        html += `<div class="summary-item"><span class="summary-label">症狀</span><span class="summary-val">${sympStr}</span></div>`;
+
+        if (formData.sickCategory === "傳染病") {
+            html += `<div class="summary-item"><span class="summary-label">診斷狀態</span><span class="summary-val">${formData.diagnosisStatus}</span></div>`;
+            if (formData.disease === "流行性感冒（流感）") {
+                html += `<div class="summary-item"><span class="summary-label">流感快篩</span><span class="summary-val">${formData.influenzaTest || '未填'}</span></div>`;
+            }
+            if (formData.disease === "新冠肺炎（COVID-19）") {
+                html += `<div class="summary-item"><span class="summary-label">COVID快篩</span><span class="summary-val">${formData.covidTest || '未填'}</span></div>`;
+            }
+        }
+    }
+
+    html += `
+        <div class="summary-item"><span class="summary-label">今日作業需求</span><span class="summary-val">${formData.homeworkRequired}</span></div>
+        <div class="summary-item"><span class="summary-label">線上上課需求</span><span class="summary-val">${formData.onlineClassRequired}</span></div>
+    `;
+
+    summaryBox.innerHTML = html;
+}
+
+/* ==========================================================================
+   11. 資料送出 (Submit & Test Mode)
+   ========================================================================== */
+async function submitForm() {
+    // 產生流水編號：503-YYYYMMDD-流水號
+    const now = new Date();
+    const dateStr = now.getFullYear().toString() +
+        (now.getMonth() + 1).toString().padStart(2, '0') +
+        now.getDate().toString().padStart(2, '0');
+    const randomSeq = Math.floor(Math.random() * 900 + 100);
+    
+    formData.submissionId = `503-${dateStr}-${randomSeq}`;
+    
+    // 台灣時間 ISO 格式
+    const taipeiTime = new Date(now.getTime() + (8 * 60 * 60 * 1000));
+    formData.submittedAt = taipeiTime.toISOString().replace('T', ' ').substring(0, 19);
+
+    // 收集其餘輸入框
+    formData.onsetDate = document.getElementById("onsetDate")?.value || "";
+    formData.visitDate = document.getElementById("visitDate")?.value || "";
+    formData.hospital = document.getElementById("hospital")?.value || "";
+    formData.lastSchoolDate = document.getElementById("lastSchoolDate")?.value || "";
+    formData.householdDetails = document.getElementById("householdDetails")?.value || "";
+    formData.siblingDetails = document.getElementById("siblingDetails")?.value || "";
+    formData.antiviralDrugName = document.getElementById("antiviralDrugName")?.value || "";
+
+    // 清除 LocalStorage
+    localStorage.removeItem("503_leave_draft");
+
+    // 顯示結果頁
+    document.getElementById("out-submissionId").innerText = formData.submissionId;
+    document.getElementById("final-summary").innerHTML = document.getElementById("confirmation-summary").innerHTML;
+
+    if (CONFIG.SUBMIT_URL === "") {
+        // 測試模式處理
+        console.log("【測試模式】完整請假 JSON 資料：", JSON.stringify(formData, null, 2));
+        document.getElementById("test-mode-badge").style.display = "block";
+        document.getElementById("btn-copy-data").style.display = "block";
+
+        // 存入本地 LocalStorage 作為模擬資料庫 (給老師端測試使用)
+        saveToLocalAdminDatabase(formData);
+    } else {
+        // 送出至後端 Google Apps Script API
+        try {
+            await fetch(CONFIG.SUBMIT_URL, {
+                method: "POST",
+                mode: "no-cors",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+        } catch (e) {
+            console.error("送出至 GAS 失敗", e);
+        }
+    }
+
+    goToStep(7);
+}
+
+function copyResultData() {
+    navigator.clipboard.writeText(JSON.stringify(formData, null, 2)).then(() => {
+        alert("已成功複製填報資料 JSON！");
+    });
+}
+
+/* ==========================================================================
+   12. LocalStorage 草稿管理
+   ========================================================================== */
+function saveDraft() {
+    localStorage.setItem("503_leave_draft", JSON.stringify(formData));
+}
+
+function restoreDraftData() {
+    const saved = localStorage.getItem("503_leave_draft");
+    if (saved) {
+        formData = JSON.parse(saved);
+        // 還原 UI 輸入欄位
+        if (formData.studentName) document.getElementById("studentName").value = formData.studentName;
+        if (formData.startDate) document.getElementById("startDate").value = formData.startDate;
+        if (formData.endDate) document.getElementById("endDate").value = formData.endDate;
+        if (formData.leaveType) selectLeaveType(formData.leaveType);
+        calculateSchoolDays();
+    }
+    document.getElementById("draft-modal").style.display = "none";
+}
+
+function clearDraftAndStartNew() {
+    localStorage.removeItem("503_leave_draft");
+    document.getElementById("draft-modal").style.display = "none";
+}
+
+function resetForm() {
+    window.location.reload();
+}
+
+/* ==========================================================================
+   13. 老師管理端 (Admin Center)
+   ========================================================================== */
+function initAdminView() {
+    document.getElementById("app-title").innerText = "🌿 503｜請假管理中心";
+    document.getElementById("app-subtitle").innerText = "導師後台管理系統";
+    document.getElementById("progress-container").style.display = "none";
+    document.querySelectorAll(".step-panel").forEach(p => p.classList.remove("active"));
+    document.getElementById("panel-admin").style.display = "flex";
+
+    const today = new Date().toISOString().split('T')[0];
+    document.getElementById("admin-today-date").innerText = "日期：" + today;
+
+    renderAdminDashboard();
+}
+
+function saveToLocalAdminDatabase(record) {
+    let list = JSON.parse(localStorage.getItem("503_admin_records") || "[]");
+    list.unshift(record); // 最新置頂
+    localStorage.setItem("503_admin_records", JSON.stringify(list));
+}
+
+function getAdminRecords() {
+    return JSON.parse(localStorage.getItem("503_admin_records") || "[]");
+}
+
+function renderAdminDashboard() {
+    const list = getAdminRecords();
+    
+    // 統計計算
+    let total = list.length;
+    let sick = list.filter(r => r.leaveType === "病假").length;
+    let contagious = list.filter(r => r.sickCategory === "傳染病").length;
+    let hw = list.filter(r => r.homeworkRequired === "需要").length;
+    let online = list.filter(r => r.onlineClassRequired === "需要").length;
+
+    document.getElementById("stat-total").innerText = total;
+    document.getElementById("stat-sick").innerText = sick;
+    document.getElementById("stat-contagious").innerText = contagious;
+    document.getElementById("stat-hw").innerText = hw;
+    document.getElementById("stat-online").innerText = online;
+
+    renderAdminList('all');
+}
+
+function renderAdminList(filter) {
+    const list = getAdminRecords();
+    const container = document.getElementById("admin-records-list");
+    container.innerHTML = "";
+
+    let filtered = list;
+    if (filter === 'contagious') filtered = list.filter(r => r.sickCategory === '傳染病');
+    if (filter === 'hw') filtered = list.filter(r => r.homeworkRequired === '需要');
+    if (filter === 'online') filtered = list.filter(r => r.onlineClassRequired === '需要');
+
+    if (filtered.length === 0) {
+        container.innerHTML = `<div style="text-align:center; padding: 20px; color: var(--text-muted);">目前無符合條件的請假紀錄</div>`;
+        return;
+    }
+
+    filtered.forEach((r, idx) => {
+        const card = document.createElement("div");
+        card.className = `admin-card ${r.sickCategory === '傳染病' ? 'type-contagious' : (r.leaveType === '病假' ? 'type-sick' : '')}`;
+        
+        let statusBadge = `<span class="status-badge status-pending">${r.status || '待處理'}</span>`;
+        if (r.status === '已查看') statusBadge = `<span class="status-badge status-viewed">已查看</span>`;
+        if (r.status === '已完成') statusBadge = `<span class="status-badge status-done">已完成</span>`;
+        if (r.status === '需聯繫家長') statusBadge = `<span class="status-badge status-contact">需聯繫家長</span>`;
+
+        let extraDetail = "";
+        if (r.sickCategory === '傳染病') {
+            extraDetail = `
+                <div style="background:#fff3f3; padding:8px; border-radius:6px; margin-top:6px; font-size:0.8rem; color:#b71c1c;">
+                    <strong>🚨 傳染病 details：</strong> ${r.disease} (${r.diagnosisStatus})<br>
+                    症狀：${r.symptoms ? r.symptoms.join("、") : ""}<br>
+                    就診醫院：${r.hospital || '未填'} | 入校日：${r.lastSchoolDate || '未填'}<br>
+                    同住家人：${r.householdSymptoms || '無'} | 兄弟姊妹：${r.siblingSameDisease || '無'}
+                    <div style="margin-top:4px;">
+                        <label><input type="checkbox" onchange="updateChecklist('${r.submissionId}', 'disinfected', this.checked)"> 已班級清消</label>
+                        <label><input type="checkbox" onchange="updateChecklist('${r.submissionId}', 'reported', this.checked)"> 已完成校安通報</label>
+                    </div>
+                </div>
+            `;
+        }
+
+        card.innerHTML = `
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <span style="font-weight:bold; font-size:1rem;">${r.studentName}</span>
+                ${statusBadge}
+            </div>
+            <div style="font-size:0.85rem; color: var(--text-muted); margin-top:4px;">
+                ${r.leaveType} | ${r.startDate}～${r.endDate} (${r.schoolDays} 天)
+            </div>
+            <div style="font-size:0.85rem; margin-top:4px;">
+                📚 作業：${r.homeworkRequired} | 💻 線上：${r.onlineClassRequired}
+            </div>
+            ${extraDetail}
+            <div style="margin-top:8px; display:flex; gap:6px;">
+                <select style="height:32px; font-size:0.75rem;" onchange="updateStatus('${r.submissionId}', this.value)">
+                    <option value="待處理" ${r.status==='待處理'?'selected':''}>待處理</option>
+                    <option value="已查看" ${r.status==='已查看'?'selected':''}>已查看</option>
+                    <option value="已完成" ${r.status==='已完成'?'selected':''}>已完成</option>
+                    <option value="需聯繫家長" ${r.status==='需聯繫家長'?'selected':''}>需聯繫家長</option>
+                </select>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+function updateStatus(id, newStatus) {
+    let list = getAdminRecords();
+    let target = list.find(r => r.submissionId === id);
+    if (target) {
+        target.status = newStatus;
+        localStorage.setItem("503_admin_records", JSON.stringify(list));
+        renderAdminDashboard();
+    }
+}
+
+function updateChecklist(id, key, val) {
+    let list = getAdminRecords();
+    let target = list.find(r => r.submissionId === id);
+    if (target) {
+        if (!target.teacherChecklist) target.teacherChecklist = {};
+        target.teacherChecklist[key] = val;
+        localStorage.setItem("503_admin_records", JSON.stringify(list));
+    }
+}
+</script>
+</body>
+</html>
